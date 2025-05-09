@@ -24,7 +24,9 @@ class _LoginScreenState extends State<LoginScreen> {
       errorMessage = null;
     });
 
-    final url = Uri.parse('http://127.0.0.1:5000/login'); // Replace with real endpoint
+    final url = Uri.parse(
+      'http://127.0.0.1:5000/login',
+    ); // Replace with real endpoint
 
     try {
       final response = await http.post(
@@ -71,27 +73,26 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(color: Colors.black12, blurRadius: 10),
-            ],
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
           ),
-          child: isWide
-              ? Row(
-                  children: [
-                    _buildLeftPanel(),
-                    const SizedBox(width: 24),
-                    Expanded(child: _buildRightPanel(context)),
-                  ],
-                )
-              : SingleChildScrollView(
-                  child: Column(
+          child:
+              isWide
+                  ? Row(
                     children: [
                       _buildLeftPanel(),
-                      const SizedBox(height: 24),
-                      _buildRightPanel(context),
+                      const SizedBox(width: 24),
+                      Expanded(child: _buildRightPanel(context)),
                     ],
+                  )
+                  : SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _buildLeftPanel(),
+                        const SizedBox(height: 24),
+                        _buildRightPanel(context),
+                      ],
+                    ),
                   ),
-                ),
         ),
       ),
     );
@@ -109,10 +110,15 @@ class _LoginScreenState extends State<LoginScreen> {
         child: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("MediLink", style: TextStyle(fontSize: 26, color: Colors.white)),
+            Text(
+              "MediLink",
+              style: TextStyle(fontSize: 26, color: Colors.white),
+            ),
             SizedBox(height: 12),
-            Text("Your Health, Our Priority",
-                style: TextStyle(fontSize: 18, color: Colors.white70)),
+            Text(
+              "Your Health, Our Priority",
+              style: TextStyle(fontSize: 18, color: Colors.white70),
+            ),
             SizedBox(height: 20),
             Text(
               "Access your medical records, appointments, and healthcare services securely in one place.",
@@ -130,9 +136,15 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Welcome Back", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const Text(
+            "Welcome Back",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
-          const Text("Please sign in to access your account", style: TextStyle(fontSize: 14)),
+          const Text(
+            "Please sign in to access your account",
+            style: TextStyle(fontSize: 14),
+          ),
           const SizedBox(height: 20),
 
           TextFormField(
@@ -164,18 +176,32 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(children: const [
-                Checkbox(value: false, onChanged: null),
-                Text("Remember me for 30 days", style: TextStyle(fontSize: 12)),
-              ]),
-              TextButton(onPressed: () {}, child: const Text("Forgot password?", style: TextStyle(fontSize: 12))),
+              Row(
+                children: const [
+                  Checkbox(value: false, onChanged: null),
+                  Text(
+                    "Remember me for 30 days",
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () {},
+                child: const Text(
+                  "Forgot password?",
+                  style: TextStyle(fontSize: 12),
+                ),
+              ),
             ],
           ),
 
           if (errorMessage != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Text(errorMessage!, style: const TextStyle(color: Colors.red)),
+              child: Text(
+                errorMessage!,
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
 
           SizedBox(
@@ -185,27 +211,46 @@ class _LoginScreenState extends State<LoginScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0066d6),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Sign In", style: TextStyle(fontSize: 16)),
+              child:
+                  isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Sign In", style: TextStyle(fontSize: 16)),
             ),
           ),
 
           const SizedBox(height: 16),
-          const Center(child: Text("Don't have an account? Contact your administrator", style: TextStyle(fontSize: 13))),
+          const Center(
+            child: Text(
+              "Don't have an account? Contact your administrator",
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
           const SizedBox(height: 16),
-          const Center(child: Text("Or continue with", style: TextStyle(fontSize: 13, color: Colors.grey))),
+          const Center(
+            child: Text(
+              "Or continue with",
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _socialButton("Google", "https://img.icons8.com/color/48/000000/google-logo.png"),
+              _socialButton(
+                "Google",
+                "https://img.icons8.com/color/48/000000/google-logo.png",
+              ),
               const SizedBox(width: 20),
-              _socialButton("SSO", "https://img.icons8.com/ios-filled/50/000000/login-rounded.png"),
+              _socialButton(
+                "SSO",
+                "https://img.icons8.com/ios-filled/50/000000/login-rounded.png",
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
