@@ -3,7 +3,6 @@ import 'ocr_screen.dart'; // OCR scanner page
 import 'screens/donate_medicine_screen.dart'; // Donor upload form
 import 'screens/login_screen.dart'; // New login screen
 
-
 void main() {
   runApp(const MyApp());
 }
