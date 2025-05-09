@@ -1,0 +1,32 @@
+.dashboard-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 1rem;
+    font-family: sans-serif;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 1rem;
+    font-size: 16px;
+  }
+  
+  .submissions-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .submission-card {
+    background: #f3f3f3;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+  }
+  
+  .pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
