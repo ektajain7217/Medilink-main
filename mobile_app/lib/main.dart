@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'ocr_screen.dart'; // OCR scanner page
-import 'screens/donate_medicine_screen.dart'; // This should be your final donor upload form
+import 'screens/donate_medicine_screen.dart'; // Donor upload form
+import 'screens/login_screen.dart'; // New login screen
+
 
 void main() {
   runApp(const MyApp());
@@ -16,12 +18,17 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      // ✅ Register routes here
+      // ✅ Register all routes here
       routes: {
         '/donate': (context) => const DonateMedicineScreen(),
+        '/ocr': (context) => OcrScreen(),
+        '/home': (context) => const MyHomePage(title: 'Home Page'),
+        '/login': (context) => const LoginScreen(),
       },
-      home: const MyHomePage(title: 'Home Page'),
+      // ✅ Start from login screen
+      home: const LoginScreen(),
     );
   }
 }
@@ -44,10 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _navigateToOCR() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => OcrScreen()),
-    );
+    Navigator.pushNamed(context, '/ocr');
   }
 
   void _navigateToDonorUpload() {
