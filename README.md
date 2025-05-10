@@ -9,13 +9,12 @@ MediLinks is a crowdsourced platform for the donation, resale, and redistributio
 ### Features
 - Medicine donation via manual entry or barcode scan
 - AI-based OCR for medicine label extraction
-- User authentication (Firebase)
+- User authentication
 - Upload with expiry date, condition, and quantity
 - Real-time donation listing & tracking
 
 ### Technologies
 - Flutter + Dart
-- Firebase Auth + Storage
 - REST API (Node.js Backend)
 - Integration with camera & barcode scanner
 
@@ -30,10 +29,8 @@ MediLinks is a crowdsourced platform for the donation, resale, and redistributio
 - Activity logs & analytics
 
 ### Technologies
-- React.js + Redux/Riverpod
+- React.js 
 - REST API
-- Firebase Hosting
-
 ---
 
 ## 🔙 Backend (Node.js + Express)
