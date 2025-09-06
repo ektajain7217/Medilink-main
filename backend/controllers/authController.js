@@ -1,29 +1,48 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
-
-const refreshTokens = new Set(); // Secure in-memory refresh token storage
-const authController = require('../controllers/authController');
-
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
 // Register New User
 const register = async (req, res) => {
   const { name, email, password, type } = req.body;
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Use Supabase Auth to create user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          type: type || 'donor'
+        }
+      }
+    });
 
-    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'Email already registered' });
+    if (error) {
+      return res.status(400).json({ message: error.message });
     }
 
-    await pool.query(
-      'INSERT INTO users (name, email, password_hash, type, verified, created_at) VALUES ($1, $2, $3, $4, $5, NOW())',
-      [name, email, hashedPassword, type, false]
-    );
+    // Update user profile in profiles table
+    if (data.user) {
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          name,
+          email,
+          type: type || 'donor',
+          verified: false,
+          created_at: new Date().toISOString()
+        });
 
-    res.status(201).json({ message: 'User registered successfully' });
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+      }
+    }
+
+    res.status(201).json({ 
+      message: 'User registered successfully',
+      user: data.user 
+    });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -35,24 +54,36 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    const user = result.rows[0];
+    // Use Supabase Auth to sign in
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (error) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const payload = { id: user.id, name: user.name, type: user.type };
+    // Get user profile
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
 
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15m' });
-    const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
-
-    refreshTokens.add(refreshToken); // Store refresh token securely
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+    }
 
     res.json({
-      accessToken,
-      refreshToken,
-      user: { id: user.id, name: user.name, type: user.type }
+      accessToken: data.session?.access_token,
+      refreshToken: data.session?.refresh_token,
+      user: {
+        id: data.user.id,
+        name: profile?.name || data.user.user_metadata?.name,
+        email: data.user.email,
+        type: profile?.type || data.user.user_metadata?.type
+      }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -61,29 +92,88 @@ const login = async (req, res) => {
 };
 
 // Refresh Access Token
-const refreshToken = (req, res) => {
-  const { token } = req.body;
+const refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
 
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-  if (!refreshTokens.has(token)) return res.status(403).json({ message: 'Invalid refresh token' });
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'No refresh token provided' });
+  }
 
-  jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
+  try {
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: refreshToken
+    });
 
-    const payload = { id: user.id, name: user.name, type: user.type };
-    const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15m' });
+    if (error) {
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
 
-    res.json({ accessToken: newAccessToken });
-  });
+    res.json({
+      accessToken: data.session?.access_token,
+      refreshToken: data.session?.refresh_token
+    });
+  } catch (err) {
+    console.error('Refresh token error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
 // Logout User
-const logout = (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ message: 'Token required' });
+const logout = async (req, res) => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
 
-  refreshTokens.delete(token);
-  res.status(200).json({ message: 'Logged out successfully' });
+    res.status(200).json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
 
-module.exports = { register, login, refreshToken, logout };
+// Get current user
+const getCurrentUser = async (req, res) => {
+  try {
+    const token = req.headers['authorization']?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Get user profile
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    res.json({
+      user: {
+        id: user.id,
+        name: profile?.name || user.user_metadata?.name,
+        email: user.email,
+        type: profile?.type || user.user_metadata?.type
+      }
+    });
+  } catch (err) {
+    console.error('Get current user error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { 
+  register, 
+  login, 
+  refreshToken, 
+  logout, 
+  getCurrentUser 
+};

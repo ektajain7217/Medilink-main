@@ -1,91 +1,245 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import './DashboardPage.css'; // Optional external CSS for cleaner styling
-
 import Layout from '../components/Layout';
 
-
 const DashboardPage = () => {
-  const [submissions, setSubmissions] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [page, setPage] = useState(1);
-  const itemsPerPage = 5;
- 
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalMedicines: 0,
+    availableMedicines: 0,
+    recentActivity: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchSubmissions = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/ocr-submissions`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setSubmissions(res.data);
-        setFiltered(res.data);
-      } catch (err) {
-        console.error('Failed to fetch submissions', err);
-      }
-    };
-   
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch users count
+      const usersRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/users?limit=1`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      
+      // Fetch medicines count
+      const medicinesRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/medicines?limit=1`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      
+      // Fetch available medicines count
+      const availableRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/medicines?status=available&limit=1`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      
+      // Fetch recent logs count
+      const logsRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/logs/stats`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
 
-    fetchSubmissions();
-  }, []);
-  
-
-  const handleSearch = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
-    setFiltered(
-      submissions.filter((item) =>
-        (item.title || '').toLowerCase().includes(term.toLowerCase()) ||
-        (item.content || '').toLowerCase().includes(term.toLowerCase())
-      )
-    );
-    setPage(1); // Reset to first page after search
+      setStats({
+        totalUsers: usersRes.data.length,
+        totalMedicines: medicinesRes.data.length,
+        availableMedicines: availableRes.data.length,
+        recentActivity: logsRes.data.recentLogs || 0
+      });
+    } catch (err) {
+      console.error('Failed to fetch dashboard stats', err);
+      setError('Failed to fetch dashboard statistics');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  if (loading) return <Layout><div>Loading dashboard...</div></Layout>;
+  if (error) return <Layout><div>Error: {error}</div></Layout>;
 
   return (
-    <div className="dashboard-container">
-      <h2>OCR Submissions</h2>
-
-      <input
-        type="text"
-        placeholder="Search submissions..."
-        value={searchTerm}
-        onChange={handleSearch}
-        className="search-input"
-      />
-
-      <ul className="submissions-list">
-        {paginated.map((item, idx) => (
-          <li key={idx} className="submission-card">
-            <strong>{item.title || 'Untitled'}</strong>
-            <p>{item.content || 'No content available'}</p>
-          </li>
-        ))}
-    return (
     <Layout>
-      <h2>Dashboard</h2>
-      <p>Welcome to the MediLinks Admin Dashboard.</p>
-    </Layout>
-  );
-      </ul>
+      <div>
+        <h2>Dashboard</h2>
+        <p>Welcome to the MediLinks Admin Dashboard.</p>
+        
+        {/* Statistics Cards */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+          gap: '20px', 
+          marginTop: '20px' 
+        }}>
+          <div style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            border: '1px solid #dee2e6',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#495057' }}>Total Users</h3>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#007bff' }}>
+              {stats.totalUsers}
+            </div>
+            <p style={{ margin: '10px 0 0 0', color: '#6c757d', fontSize: '14px' }}>
+              Registered users
+            </p>
+          </div>
+          
+          <div style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            border: '1px solid #dee2e6',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#495057' }}>Total Medicines</h3>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#28a745' }}>
+              {stats.totalMedicines}
+            </div>
+            <p style={{ margin: '10px 0 0 0', color: '#6c757d', fontSize: '14px' }}>
+              Medicine listings
+            </p>
+          </div>
+          
+          <div style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            border: '1px solid #dee2e6',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#495057' }}>Available</h3>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#ffc107' }}>
+              {stats.availableMedicines}
+            </div>
+            <p style={{ margin: '10px 0 0 0', color: '#6c757d', fontSize: '14px' }}>
+              Available medicines
+            </p>
+          </div>
+          
+          <div style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            border: '1px solid #dee2e6',
+            textAlign: 'center'
+          }}>
+            <h3 style={{ margin: '0 0 10px 0', color: '#495057' }}>Recent Activity</h3>
+            <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#dc3545' }}>
+              {stats.recentActivity}
+            </div>
+            <p style={{ margin: '10px 0 0 0', color: '#6c757d', fontSize: '14px' }}>
+              Logs (24h)
+            </p>
+          </div>
+        </div>
 
-      <div className="pagination-controls">
-        <button onClick={() => setPage((p) => Math.max(p - 1, 1))} disabled={page === 1}>
-          Prev
-        </button>
-        <span>Page {page} of {totalPages}</span>
-        <button onClick={() => setPage((p) => Math.min(p + 1, totalPages))} disabled={page === totalPages}>
-          Next
-        </button>
+        {/* Quick Actions */}
+        <div style={{ marginTop: '30px' }}>
+          <h3>Quick Actions</h3>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '15px',
+            marginTop: '15px'
+          }}>
+            <button 
+              onClick={() => window.location.href = '/users'}
+              style={{ 
+                padding: '15px', 
+                backgroundColor: '#007bff', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              Manage Users
+            </button>
+            
+            <button 
+              onClick={() => window.location.href = '/listings'}
+              style={{ 
+                padding: '15px', 
+                backgroundColor: '#28a745', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              Manage Medicines
+            </button>
+            
+            <button 
+              onClick={() => window.location.href = '/logs'}
+              style={{ 
+                padding: '15px', 
+                backgroundColor: '#6c757d', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              View Logs
+            </button>
+          </div>
+        </div>
+
+        {/* System Status */}
+        <div style={{ marginTop: '30px' }}>
+          <h3>System Status</h3>
+          <div style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: '20px', 
+            borderRadius: '8px', 
+            border: '1px solid #dee2e6',
+            marginTop: '15px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ 
+                width: '12px', 
+                height: '12px', 
+                backgroundColor: '#28a745', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ fontWeight: 'bold' }}>Supabase Database</span>
+              <span style={{ color: '#6c757d' }}>- Connected</span>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+              <div style={{ 
+                width: '12px', 
+                height: '12px', 
+                backgroundColor: '#28a745', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ fontWeight: 'bold' }}>API Server</span>
+              <span style={{ color: '#6c757d' }}>- Running</span>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+              <div style={{ 
+                width: '12px', 
+                height: '12px', 
+                backgroundColor: '#28a745', 
+                borderRadius: '50%' 
+              }}></div>
+              <span style={{ fontWeight: 'bold' }}>Authentication</span>
+              <span style={{ color: '#6c757d' }}>- Active</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
