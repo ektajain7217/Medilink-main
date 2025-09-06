@@ -67,9 +67,18 @@ app.get('/', async (req, res) => {
       throw error;
     }
 
-    res.json({ message: 'Supabase connection successful', profiles: data });
+    res.json({ 
+      message: 'Supabase connection successful', 
+      profiles: data,
+      supabaseUrl: process.env.SUPABASE_URL || 'https://hctrvqyhscvrxwvinbdv.supabase.co',
+      timestamp: new Date().toISOString()
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Supabase connection error', error: err.message });
+    res.status(500).json({ 
+      message: 'Supabase connection error', 
+      error: err.message,
+      supabaseUrl: process.env.SUPABASE_URL || 'https://hctrvqyhscvrxwvinbdv.supabase.co'
+    });
   }
 });
 
